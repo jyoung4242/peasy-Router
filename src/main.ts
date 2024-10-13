@@ -31,3 +31,5 @@ const myRouter = new PuiRouter(document.getElementsByTagName("main")[0], [
   { component: About, hash: "About" },
   { component: Contact, hash: "Contact" },
 ]);
+
+myRouter.initialize();

@@ -1,8 +1,8 @@
 export class Contact {
   public static name = "Contact";
-  public static active: boolean = false;
+
   public static template = `
-     <div \${===active}>
+     <div >
           <h1>Contact</h1>
       </div>
       `;
