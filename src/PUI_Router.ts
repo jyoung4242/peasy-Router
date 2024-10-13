@@ -12,16 +12,19 @@ export interface PuiComponent {
 }
 
 export class PuiRouter {
+  public static updateHandler: number = 0;
   public static default = "";
   public static routes: Array<PuiRoute> = [];
-  public static get currentRoute() {
+  public static renderedComponents: Array<PuiComponent> = [];
+  public static getCurrentRoute() {
     const currentroute = window.location.hash.slice(1);
+
     for (let i = 0; i < this.routes.length; i++) {
       const route = this.routes[i];
       if (route.name === currentroute) {
         PuiRouter.currentComponent = route.component;
         PuiRouter.currentComponent.active = true;
-        return;
+        return true;
       } else {
         route.component.active = false;
       }
@@ -29,20 +32,22 @@ export class PuiRouter {
     return true;
   }
 
+  update() {}
+
   public static currentComponent: any = null;
 
   public static template = `
   <main>
-    <\${ route.component === route.state } \${ route <=* routes }>
+   \${component <=* renderedComponents }>
   </main>
   `;
 
   public static create(state: { default: string; routes: Array<PuiRoute> }) {
     PuiRouter.default = state.default;
     PuiRouter.routes = [...state.routes];
-
-    //loop through components and find one that matches default
-    console.log("setting default path");
+    PuiRouter.renderedComponents = PuiRouter.routes.map(route => {
+      return route.component;
+    });
 
     for (let i = 0; i < PuiRouter.routes.length; i++) {
       const route = PuiRouter.routes[i];
@@ -50,8 +55,12 @@ export class PuiRouter {
         window.location.hash = `#${route.component.name}`;
         PuiRouter.currentComponent = route.component;
         PuiRouter.currentComponent.active = true;
-        return;
+        break;
       }
     }
+
+    this.updateHandler = setInterval(() => {
+      PuiRouter.getCurrentRoute();
+    }, 1000 / 60);
   }
 }
