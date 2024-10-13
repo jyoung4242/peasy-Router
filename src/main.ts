@@ -19,14 +19,14 @@ const template = `
     <\${Header ===}>
     <\${Navbar ===}>
     <\${Footer ===}>
-    <main></main>
+    <main id="main"></main>
 </div>`;
 
 //Setup Routes
 
 await UI.create(document.body, model, template).attached;
 
-const myRouter = new PuiRouter(document.getElementsByTagName("main")[0], [
+const myRouter = new PuiRouter("main", [
   { component: Home, hash: "Home", default: true },
   { component: About, hash: "About" },
   { component: Contact, hash: "Contact" },

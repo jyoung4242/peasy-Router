@@ -1,5 +1,3 @@
-import { PuiComponent } from "../PUI_Router";
-
 export class About {
   public static name = "About";
 

@@ -29,17 +29,34 @@ export class PuiRouter {
   view: UIView | undefined;
   oldPath: string = "";
 
-  constructor(private host: HTMLElement | string, private routes: Array<PuiRoute>, private updateTime: number = 1000 / 16) {
+  badPath: PuiComponent = new FourOhFour();
+
+  constructor(
+    private host: HTMLElement | string,
+    private routes: Array<PuiRoute>,
+    badPath: PuiComponent = new FourOhFour(),
+    private updateTime: number = 1000 / 16
+  ) {
+    if (typeof this.host === "string") {
+      this.host = document.getElementById(this.host) as HTMLElement;
+    } else {
+      this.host = this.host as HTMLElement;
+    }
+
     this._updateHandler = setInterval(() => this._update(), updateTime);
     const tempRoute = routes.find(route => route.default)?.component;
     console.log(tempRoute);
     console.log(this.host);
 
+    if (badPath) {
+      this.badPath = badPath;
+    }
+
     if (tempRoute) {
       this.defaultComponent = tempRoute;
       this.defaultTemplate = tempRoute.template;
     } else {
-      this.defaultComponent = new FourOhFour();
+      this.defaultComponent = this.badPath;
       this.defaultTemplate = this.defaultComponent.template;
     }
 
@@ -52,7 +69,21 @@ export class PuiRouter {
     console.log("PuiRouter initialized", this.view);
   }
 
-  addRoute(newRoute: PuiRoute) {}
+  addRoute(newRoute: PuiRoute) {
+    this.routes.push(newRoute);
+  }
+
+  getRoutes() {
+    return this.routes;
+  }
+
+  set404(badPath: PuiComponent) {
+    this.badPath = badPath;
+  }
+
+  get404() {
+    return this.badPath;
+  }
 
   private async _update() {
     const currentPath = window.location.hash;
@@ -66,7 +97,7 @@ export class PuiRouter {
         nextComponent = route.component;
         nextTemplate = nextComponent!.template;
       } else {
-        nextComponent = new FourOhFour();
+        nextComponent = this.badPath;
         nextTemplate = nextComponent!.template;
       }
 
