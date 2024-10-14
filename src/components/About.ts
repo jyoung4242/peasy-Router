@@ -8,8 +8,10 @@ export class About {
           <p>My name is Mookie</p>
        </div>
       `;
-  public static loadParams(params: Array<any>) {
-    About.username = params[0].value;
+  public static loadParams(params: Array<any>) {}
+
+  public static loadProps(props: Array<any>) {
+    About.username = props[0].value;
   }
 
   public static create() {}

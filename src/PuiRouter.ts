@@ -1,19 +1,23 @@
 import { UI, UIView } from "@peasy-lib/peasy-ui";
 
 export interface PuiRoute {
-  component: PuiComponent;
+  component: PuiRoutingComponent;
   hash: string;
   props?: Array<Record<string, any>>;
   default?: boolean;
 }
 
-export interface PuiComponent {
+export interface PuiRoutingComponent {
   name: string;
   create: () => void;
   template: string;
   loadParams: (params: Array<any>) => void;
+  loadProps: (props: Array<any>) => void;
 }
 
+/**
+ * Default 404 route in case of bad path
+ */
 class FourOhFour {
   name: string = "404";
   create: () => void = () => {};
@@ -22,70 +26,62 @@ class FourOhFour {
   `;
   active: boolean = false;
   loadParams: (params: Array<any>) => void = () => {};
+  loadProps: (props: Array<any>) => void = () => {};
 }
 
+/**
+ * PuiRouter
+ *
+ * Router for PUI components
+ * @param _host HTML element or ID of element
+ * @param routes Array of PuiRoutes
+ * @param badPath Custom 404 route
+ * @param updateTime Time in milliseconds between updates
+ */
+
 export class PuiRouter {
-  private _updateHandler: number;
-  defaultComponent: PuiComponent;
+  defaultComponent: PuiRoutingComponent;
   defaultTemplate: string;
   view: UIView | undefined;
   oldPath: string = "";
   oldParams: Record<string, string> = {};
 
-  badPath: PuiComponent = new FourOhFour();
-
   constructor(
-    private host: HTMLElement | string,
-    private routes: Array<PuiRoute>,
-    badPath: PuiComponent = new FourOhFour(),
-    private updateTime: number = 1000 / 16
+    private _host: HTMLElement | string,
+    private _routes: Array<PuiRoute>,
+    private _badPath: PuiRoutingComponent = new FourOhFour(),
+    private _updateTime: number = 1000 / 16
   ) {
-    if (typeof this.host === "string") {
-      this.host = document.getElementById(this.host) as HTMLElement;
-    } else {
-      this.host = this.host as HTMLElement;
+    if (typeof this._host === "string") {
+      this._host = document.getElementById(this._host) as HTMLElement;
     }
+    setInterval(() => this._update(), _updateTime);
 
-    this._updateHandler = setInterval(() => this._update(), updateTime);
-    const tempRoute = routes.find(route => route.default)?.component;
-    console.log(tempRoute);
-    console.log(this.host);
-
-    if (badPath) {
-      this.badPath = badPath;
-    }
-
-    if (tempRoute) {
-      this.defaultComponent = tempRoute;
-      this.defaultTemplate = tempRoute.template;
-    } else {
-      this.defaultComponent = this.badPath;
-      this.defaultTemplate = this.defaultComponent.template;
-    }
-
-    console.log(this.defaultComponent);
+    const tempRoute = this._routes.find(route => route.default)!.component;
+    tempRoute ? (this.defaultComponent = tempRoute) : (this.defaultComponent = this._badPath);
+    this.defaultTemplate = this.defaultComponent.template;
   }
 
   async initialize() {
-    (this.view as UIView) = UI.create(this.host, this.defaultComponent, this.defaultComponent.template);
+    (this.view as UIView) = UI.create(this._host, this.defaultComponent, this.defaultComponent.template);
     await (this.view as UIView).attached;
     console.log("PuiRouter initialized", this.view);
   }
 
   addRoute(newRoute: PuiRoute) {
-    this.routes.push(newRoute);
+    this._routes.push(newRoute);
   }
 
   getRoutes() {
-    return this.routes;
+    return this._routes;
   }
 
-  set404(badPath: PuiComponent) {
-    this.badPath = badPath;
+  set404(badPath: PuiRoutingComponent) {
+    this._badPath = badPath;
   }
 
   get404() {
-    return this.badPath;
+    return this._badPath;
   }
 
   private async _update() {
@@ -96,30 +92,30 @@ export class PuiRouter {
       this.oldPath = currentPath;
       this.oldParams = currentParams;
 
-      console.log(currentPath);
-      console.log(currentParams);
-
       let currentHash = currentPath.slice(1).split("?")[0];
-      const route = this.routes.find(route => route.hash === currentHash);
+      const route = this._routes.find(route => route.hash === currentHash);
 
-      let nextComponent: PuiComponent | undefined;
+      let nextComponent: PuiRoutingComponent | undefined;
       let nextTemplate: string | undefined;
 
       if (route) {
         nextComponent = route.component;
         nextTemplate = nextComponent!.template;
       } else {
-        nextComponent = this.badPath;
+        nextComponent = this._badPath;
         nextTemplate = nextComponent!.template;
       }
 
-      this.view?.destroy();
-      await this.view?.detached;
-      (this.view as UIView) = UI.create(this.host, nextComponent, nextTemplate);
+      if (this.view instanceof UIView) {
+        this.view?.destroy();
+        await this.view?.detached;
+      }
+
+      (this.view as UIView) = UI.create(this._host, nextComponent, nextTemplate);
       await (this.view as UIView).attached;
 
       if (route?.props) {
-        route.component.loadParams?.(route.props);
+        route.component.loadProps?.(route.props);
       }
 
       const urlparams = new URLSearchParams(currentPath.split("?")[1]);
@@ -132,12 +128,11 @@ export class PuiRouter {
         });
 
         if (nextComponent && typeof nextComponent.loadParams === "function") {
-          console.log(nextComponent);
           nextComponent.loadParams(paramArray);
         }
       }
 
-      if (nextComponent === this.badPath) throw new Error("404 Route not found");
+      if (nextComponent === this._badPath) throw new Error("404 Route not found");
     }
   }
 }

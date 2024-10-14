@@ -12,5 +12,7 @@ export class Contact {
   public static loadParams(params: Array<any>) {
     Contact.username = params[0].value;
   }
+  public static loadProps(props: Array<any>) {}
+
   public static create() {}
 }

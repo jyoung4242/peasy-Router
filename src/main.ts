@@ -42,6 +42,7 @@ class Custom404 {
     `;
   active: boolean = false;
   loadParams: (params: Array<any>) => void = () => {};
+  loadProps: (props: Array<any>) => void = () => {};
 }
 
 myRouter.set404(new Custom404());
