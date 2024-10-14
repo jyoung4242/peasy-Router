@@ -7,6 +7,8 @@ export class Home {
     </div>
     `;
 
+  public static loadParams(params: Array<any>) {}
+
   public static create() {
     console.log("Home created");
   }

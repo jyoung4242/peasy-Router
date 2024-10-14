@@ -28,8 +28,22 @@ await UI.create(document.body, model, template).attached;
 
 const myRouter = new PuiRouter("main", [
   { component: Home, hash: "Home", default: true },
-  { component: About, hash: "About" },
+  { component: About, hash: "About", props: [{ username: "Mookie" }] },
   { component: Contact, hash: "Contact" },
 ]);
+
+/*test out 404 override */
+class Custom404 {
+  name: string = "404";
+  create: () => void = () => {};
+  template: string = `
+      <div> 404: Page Not Found </div>
+      <a href="#Home">Return to Home</a>
+    `;
+  active: boolean = false;
+  loadParams: (params: Array<any>) => void = () => {};
+}
+
+myRouter.set404(new Custom404());
 
 myRouter.initialize();

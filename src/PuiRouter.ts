@@ -3,7 +3,7 @@ import { UI, UIView } from "@peasy-lib/peasy-ui";
 export interface PuiRoute {
   component: PuiComponent;
   hash: string;
-  props?: Array<any>;
+  props?: Array<Record<string, any>>;
   default?: boolean;
 }
 
@@ -11,6 +11,7 @@ export interface PuiComponent {
   name: string;
   create: () => void;
   template: string;
+  loadParams: (params: Array<any>) => void;
 }
 
 class FourOhFour {
@@ -20,6 +21,7 @@ class FourOhFour {
     <div> 404: Page Not Found </div>
   `;
   active: boolean = false;
+  loadParams: (params: Array<any>) => void = () => {};
 }
 
 export class PuiRouter {
@@ -28,6 +30,7 @@ export class PuiRouter {
   defaultTemplate: string;
   view: UIView | undefined;
   oldPath: string = "";
+  oldParams: Record<string, string> = {};
 
   badPath: PuiComponent = new FourOhFour();
 
@@ -87,9 +90,18 @@ export class PuiRouter {
 
   private async _update() {
     const currentPath = window.location.hash;
-    if (currentPath !== this.oldPath) {
+    const currentParams = getParams(currentPath);
+
+    if (currentPath !== this.oldPath || JSON.stringify(currentParams) !== JSON.stringify(this.oldParams)) {
       this.oldPath = currentPath;
-      const route = this.routes.find(route => route.hash === currentPath.slice(1));
+      this.oldParams = currentParams;
+
+      console.log(currentPath);
+      console.log(currentParams);
+
+      let currentHash = currentPath.slice(1).split("?")[0];
+      const route = this.routes.find(route => route.hash === currentHash);
+
       let nextComponent: PuiComponent | undefined;
       let nextTemplate: string | undefined;
 
@@ -106,7 +118,35 @@ export class PuiRouter {
       (this.view as UIView) = UI.create(this.host, nextComponent, nextTemplate);
       await (this.view as UIView).attached;
 
-      if (nextComponent instanceof FourOhFour) throw new Error("404 Route not found");
+      if (route?.props) {
+        route.component.loadParams?.(route.props);
+      }
+
+      const urlparams = new URLSearchParams(currentPath.split("?")[1]);
+      if (urlparams.toString()) {
+        // deal with params
+        const paramArray: Array<any> = [];
+
+        urlparams.forEach((value, key) => {
+          paramArray.push({ key, value });
+        });
+
+        if (nextComponent && typeof nextComponent.loadParams === "function") {
+          console.log(nextComponent);
+          nextComponent.loadParams(paramArray);
+        }
+      }
+
+      if (nextComponent === this.badPath) throw new Error("404 Route not found");
     }
   }
+}
+
+function getParams(url: string): Record<string, string> {
+  const params = new URLSearchParams(url.split("?")[1]);
+  const result: Record<string, string> = {};
+  params.forEach((value, key) => {
+    result[key] = value;
+  });
+  return result;
 }
