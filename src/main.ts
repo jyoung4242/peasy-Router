@@ -47,4 +47,4 @@ class Custom404 {
 
 myRouter.set404(new Custom404());
 
-myRouter.initialize();
+await myRouter.initialize();
